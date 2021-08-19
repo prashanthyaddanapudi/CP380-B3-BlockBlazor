@@ -1,34 +1,98 @@
 ﻿@page "/blocks"
 
-<!-- TODO: Add using and inject statements -->
+@using CP380_B1_BlockList.Models
+@using Data
 
 <h3>Blocks</h3>
 
 @if (blocklist == null)
 {
-    <p><em>Loading...</em></p>
-}
+    <p><em>Loading...</em></p> }
 else
 {
-    <div class="card-columns">
+    <html>
+    <head>
+        <style>
+            .button {
+                border: none;
+                color: white;
+                padding: 8px 12px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+            }
 
-        <!-- TODO: Add cards for each block in the block list
+            .button1 {
+                background-color: #008CBA;
+            }
+           
+            .button1:hover {
+                background-color: #001c47 !important;
+                color: #fff !important;
+                border-color: #001c47 !important;
+            }
+            .pull-right {
+                float: right !important;
+                padding-top: 10px !important;
+            }
+           
+           
+        </style>
+    </head>
+    <body>
 
-                   Each card should show:
-                        - the position in the chain (starting at 0)
-                        - the hash
-                        - the nonce
-                        - the previous hash
-          -->
 
-    </div>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Hash</th>
+                        <th scope="col">Nonce</th>
+                        <th scope="col">Previous Hash</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (Block block in blocklist)
+                    {
+                        <tr>
+                            <td scope="row">@block.TimeStamp</td>
+                            <td>@block.Hash</td>
+                            <td>@block.Nonce</td>
+                            <td>@block.PreviousHash</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="pull-right">
+            <button class="button button1" @onclick="MineBlock">
+                Mine Block
+            </button>
+        </div>
+
+    </body>
+</html>
+
 }
 
-@code {
-    IEnumerable<Block> blocklist;
+@code { IEnumerable<Block> blocklist;
+    BlockService service = new BlockService();
+    PendingTransactionService pendingTransactionService = new PendingTransactionService();
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: fetch blocks from the BlockService
+        blocklist = (await service.FetchBlocks()).ToList();
     }
-}
+
+    private async void MineBlock()
+    {
+        MiningService miningService = new MiningService(service, pendingTransactionService);
+        Task<Block> blockNew = miningService.MineBlock(blocklist);
+        Task<Block> block = service.SubmitNewBlockAsync(blockNew.Result);
+
+        blocklist = (await service.FetchBlocks()).ToList();
+    } }
